@@ -130,27 +130,29 @@ const GameBoard = ({ gameState, onMakeMove }) => {
       {/* The board itself */}
       <div className="board">
         {gameState.board.map((row, rowIndex) => (
-          <div key={`row-${rowIndex}`} className="row">
-            {row.map((cell, colIndex) => (
-              <div 
-                key={`cell-${rowIndex}-${colIndex}`} 
-                className={`cell ${
-                  cell === 1 ? 'player' : cell === 2 ? 'bot' : ''
-                } ${
-                  rowIndex === lastRow && colIndex === lastCol ? 'last-move' : ''
-                } ${
-                  isWinningCell(rowIndex, colIndex) ? 'winning-cell' : ''
-                }`}
-                onClick={() => handleColumnClick(colIndex)}
-                data-column={colIndex}
-                data-row={rowIndex}
-              >
-                {cell !== 0 && (
-                  <div className={`token ${isWinningCell(rowIndex, colIndex) ? 'winning' : ''}`}></div>
-                )}
-              </div>
-            ))}
-          </div>
+          row.map((cell, colIndex) => (
+            <div 
+              key={`cell-${rowIndex}-${colIndex}`} 
+              className={`cell ${
+                cell === 1 ? 'player' : cell === 2 ? 'bot' : ''
+              } ${
+                rowIndex === lastRow && colIndex === lastCol ? 'last-move' : ''
+              } ${
+                isWinningCell(rowIndex, colIndex) ? 'winning-cell' : ''
+              }`}
+              onClick={() => handleColumnClick(colIndex)}
+              data-column={colIndex}
+              data-row={rowIndex}
+              style={{
+                gridRow: rowIndex + 1,
+                gridColumn: colIndex + 1
+              }}
+            >
+              {cell !== 0 && (
+                <div className={`token ${isWinningCell(rowIndex, colIndex) ? 'winning' : ''}`}></div>
+              )}
+            </div>
+          ))
         ))}
       </div>
     </div>
