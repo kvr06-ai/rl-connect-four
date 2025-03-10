@@ -6,6 +6,7 @@ import DifficultySelector from './components/DifficultySelector';
 import FirstPlayerSelector from './components/FirstPlayerSelector';
 import StatsDisplay from './components/StatsDisplay';
 import { initializeStrongBot, getStrongBotMove } from './ai/strongBot';
+import { initializeAlphaZero, getAlphaZeroMove, isAlphaZeroAvailable } from './ai/alphaZeroService';
 
 function App() {
   const [gameState, setGameState] = useState(null);
@@ -24,16 +25,28 @@ function App() {
   });
   const [moveCount, setMoveCount] = useState(0);
   const [aiInitialized, setAiInitialized] = useState(false);
+  const [alphaZeroAvailable, setAlphaZeroAvailable] = useState(false);
   
-  // Initialize the strong bot on first render
+  // Initialize the strong bot and AlphaZero on first render
   useEffect(() => {
     async function loadAI() {
       try {
+        // Initialize both AIs
         await initializeStrongBot();
         setAiInitialized(true);
         console.log("Strong bot AI initialized successfully");
+        
+        // Check if AlphaZero API is available
+        const alphaZeroReady = await isAlphaZeroAvailable();
+        if (alphaZeroReady) {
+          await initializeAlphaZero();
+          setAlphaZeroAvailable(true);
+          console.log("AlphaZero model initialized successfully");
+        } else {
+          console.log("AlphaZero API is not available. Will use fallback AI for hard difficulty.");
+        }
       } catch (error) {
-        console.error("Failed to initialize strong bot:", error);
+        console.error("Failed to initialize AI:", error);
         setError("Failed to initialize AI. Falling back to basic bot.");
       }
     }
@@ -188,22 +201,17 @@ function App() {
   // Update game statistics
   const updateStats = (outcome, moves) => {
     setStats(prevStats => {
+      // Calculate new values
+      const newPlayerWins = outcome === 'player' ? prevStats.playerWins + 1 : prevStats.playerWins;
+      const newBotWins = outcome === 'bot' ? prevStats.botWins + 1 : prevStats.botWins;
+      const newDraws = outcome === 'draw' ? prevStats.draws + 1 : prevStats.draws;
+      
+      // Properly increment games played counter
       const newGamesPlayed = prevStats.gamesPlayed + 1;
+      
+      // Calculate new total moves and average
       const newTotalMoves = prevStats.totalMoves + moves;
       const newAvgMoves = newGamesPlayed > 0 ? Math.round((newTotalMoves / newGamesPlayed) * 10) / 10 : moves;
-      
-      // Update the appropriate win counter
-      let newPlayerWins = prevStats.playerWins;
-      let newBotWins = prevStats.botWins;
-      let newDraws = prevStats.draws;
-      
-      if (outcome === 'player') {
-        newPlayerWins++;
-      } else if (outcome === 'bot') {
-        newBotWins++;
-      } else if (outcome === 'draw') {
-        newDraws++;
-      }
       
       return {
         gamesPlayed: newGamesPlayed,
@@ -247,14 +255,29 @@ function App() {
       // Get bot's move based on difficulty and AI availability
       let botColumn;
       
-      if (difficulty === 'hard' && aiInitialized) {
-        try {
-          // Use the strong pre-trained bot for hard difficulty
+      if (difficulty === 'hard') {
+        if (alphaZeroAvailable) {
+          // Try to get a move from the AlphaZero API
+          try {
+            console.log("Using AlphaZero for move");
+            const alphaZeroMove = await getAlphaZeroMove(currentBoard);
+            if (alphaZeroMove !== null && validMoves.includes(alphaZeroMove)) {
+              botColumn = alphaZeroMove;
+            } else {
+              // Fallback to strong bot if AlphaZero fails
+              botColumn = await getStrongBotMove(currentBoard, validMoves);
+            }
+          } catch (error) {
+            console.error("Error using AlphaZero:", error);
+            // Fallback to strong bot
+            botColumn = await getStrongBotMove(currentBoard, validMoves);
+          }
+        } else if (aiInitialized) {
+          // Use the strong bot if AlphaZero is not available
           console.log("Using strong bot for move");
           botColumn = await getStrongBotMove(currentBoard, validMoves);
-        } catch (error) {
-          console.error("Error using strong bot:", error);
-          // Fallback to basic bot if there's an error
+        } else {
+          // Fallback to basic bot if both AIs are unavailable
           botColumn = getBotMove(currentBoard, validMoves, 'hard');
         }
       } else {
@@ -549,6 +572,13 @@ function App() {
   const handleDifficultyChange = (newDifficulty) => {
     setDifficulty(newDifficulty);
     console.log(`Difficulty changed to: ${newDifficulty}`);
+    
+    // Show a message if AlphaZero is not available but hard difficulty is selected
+    if (newDifficulty === 'hard' && !alphaZeroAvailable && !aiInitialized) {
+      setError("Note: Advanced AI is not available. Using basic hard mode instead.");
+    } else {
+      setError(null);
+    }
   };
   
   // Handle first player change
@@ -607,7 +637,7 @@ function App() {
           <ul>
             <li><strong>Easy:</strong> Makes random moves</li>
             <li><strong>Medium:</strong> Can block your winning moves and try to win</li>
-            <li><strong>Hard:</strong> Uses a pre-trained reinforcement learning model similar to AlphaZero</li>
+            <li><strong>Hard:</strong> Uses AlphaZero - a perfect pre-trained AI that learned from millions of games</li>
           </ul>
         </div>
       )}

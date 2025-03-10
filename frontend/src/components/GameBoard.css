@@ -61,15 +61,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 1;
-  transition: transform 0.3s ease;
   display: grid;
   grid-template-columns: repeat(7, 60px);
   grid-template-rows: repeat(6, 60px);
-  grid-gap: 0px;
-}
-
-.board:hover {
-  transform: scale(1.01);
+  grid-gap: 0;
 }
 
 .row {
@@ -85,7 +80,6 @@
   align-items: center;
   cursor: pointer;
   position: relative;
-  transition: background-color 0.3s ease;
 }
 
 /* Create circular holes in the blue board */
@@ -123,41 +117,6 @@
 
 .cell.winning-cell::before {
   background-color: #81c784;
-  animation: pulse 1.5s infinite;
-}
-
-.token.winning {
-  animation: pop 0.5s ease-out, glow 1.5s infinite alternate;
-}
-
-@keyframes drop {
-  0% {
-    transform: translateY(-300%);
-  }
-  70% {
-    transform: translateY(10%);
-  }
-  85% {
-    transform: translateY(-5%);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-@keyframes glow {
-  from { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073, 0 0 20px #e60073; }
-  to { box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #e60073; }
-}
-
-.token {
-  animation: drop 0.5s ease-in-out;
 }
 
 /* Media queries for responsive design */
